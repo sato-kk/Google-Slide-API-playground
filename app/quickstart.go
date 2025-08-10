@@ -12,6 +12,7 @@ import (
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 	"google.golang.org/api/slides/v1"
 )
@@ -79,19 +80,42 @@ func main() {
 	}
 
 	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b, "https://www.googleapis.com/auth/presentations")
+	config, err := google.ConfigFromJSON(b, "https://www.googleapis.com/auth/presentations", "https://www.googleapis.com/auth/drive")
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
+
 	client := getClient(config)
 
-	srv, err := slides.NewService(ctx, option.WithHTTPClient(client))
+	slidesService, err := slides.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Slides client: %v", err)
 	}
 
-	_, err = presentations.CreatePresentation(srv, "New Presentation Title")
+	driveService, err := drive.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
-		log.Fatalf("Failed to create presentation: %v", err)
+		log.Fatalf("Unable to retrieve Drive client: %v", err)
+	}
+
+	presentationTitle := "New Presentation Title"
+	presentationId, err := presentations.FindPresentationByTitle(driveService, presentationTitle)
+	if err != nil {
+		log.Fatalf("Error when finding presentation: %v", err)
+	}
+
+	if presentationId == "" {
+		// Presentation not found, create it
+		presentationId, err = presentations.CreatePresentation(slidesService, presentationTitle)
+		if err != nil {
+			log.Fatalf("Failed to create presentation: %v", err)
+		}
+	} else {
+		fmt.Printf("Found existing presentation with ID: %s\n", presentationId)
+	}
+
+	// Add a slide to the presentation
+	_, err = presentations.AddSlide(slidesService, presentationId)
+	if err != nil {
+		log.Fatalf("Failed to add slide: %v", err)
 	}
 }
