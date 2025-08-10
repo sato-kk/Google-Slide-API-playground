@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 
+	"quickstart/presentations"
+
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
@@ -77,7 +79,7 @@ func main() {
 	}
 
 	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b, "https://www.googleapis.com/auth/presentations.readonly")
+	config, err := google.ConfigFromJSON(b, "https://www.googleapis.com/auth/presentations")
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
@@ -88,17 +90,8 @@ func main() {
 		log.Fatalf("Unable to retrieve Slides client: %v", err)
 	}
 
-	// Prints the number of slides and elements in a sample presentation:
-	// https://docs.google.com/presentation/d/1EAYk18WDjIG-zp_0vLm3CsfQh_i8eXc67Jo2O9C6Vuc/edit
-	presentationId := "1EAYk18WDjIG-zp_0vLm3CsfQh_i8eXc67Jo2O9C6Vuc"
-	presentation, err := srv.Presentations.Get(presentationId).Do()
+	_, err = presentations.CreatePresentation(srv, "New Presentation Title")
 	if err != nil {
-		log.Fatalf("Unable to retrieve data from presentation: %v", err)
-	}
-
-	fmt.Printf("The presentation contains %d slides:\n", len(presentation.Slides))
-	for i, slide := range presentation.Slides {
-		fmt.Printf("- Slide #%d contains %d elements.\n", (i + 1),
-			len(slide.PageElements))
+		log.Fatalf("Failed to create presentation: %v", err)
 	}
 }
